@@ -19,7 +19,7 @@ month_mapping = {
     "September": 9, "October": 10, "November": 11, "December": 12
 }
 
-def check_maintenance(equipment_name, requested_date):
+def check_maintenance(equipment_name, company_name, requested_date):
     """Check if the requested maintenance date matches the correct quarter in the schedule."""
     
     # Convert requested date to a datetime object
@@ -27,11 +27,22 @@ def check_maintenance(equipment_name, requested_date):
     requested_month = requested_date.month
     requested_year = requested_date.year
 
+    # Normalize input values for comparison (lowercase + strip spaces)
+    equipment_name = equipment_name.strip().lower()
+    company_name = company_name.strip().lower()
+
+    # Normalize Excel data for comparison
+    df["Normalized Equipment"] = df["Maintenance subject"].astype(str).str.strip().str.lower()
+    df["Normalized Company"] = df["Company:"].astype(str).str.strip().str.lower()
+
     # Find the corresponding row in the maintenance planner
-    equipment_data = df[df["Maintenance subject"].str.lower() == equipment_name.lower()]
+    equipment_data = df[
+        (df["Normalized Equipment"] == equipment_name) & 
+        (df["Normalized Company"] == company_name)
+    ]
 
     if equipment_data.empty:
-        return {"status": "error", "message": f"No maintenance record found for {equipment_name}."}
+        return {"status": "error", "message": f"No maintenance record found for '{equipment_name}' under '{company_name}'."}
 
     # Extract scheduled inspection months from Q1-Q4
     scheduled_months = []
@@ -63,9 +74,10 @@ def check_maintenance_api():
         return jsonify({"error": "Unauthorized access. Invalid API key."}), 401
 
     equipment_name = data.get("equipment_name")
+    company_name = data.get("company_name")
     requested_date = data.get("requested_date")
 
-    result = check_maintenance(equipment_name, requested_date)
+    result = check_maintenance(equipment_name, company_name, requested_date)
     return jsonify(result)
 
 if __name__ == '__main__':
