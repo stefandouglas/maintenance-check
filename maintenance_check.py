@@ -33,7 +33,7 @@ def check_maintenance(equipment_name, company_name, requested_date):
 
     # Normalize Excel data for comparison
     df["Normalized Equipment"] = df["Maintenance subject"].astype(str).str.strip().str.lower()
-    df["Normalized Company"] = df["Company:"].astype(str).str.strip().str.lower()
+    df["Normalized Company"] = df["Company"].astype(str).str.strip().str.lower()
 
     # Find the corresponding row in the maintenance planner
     equipment_data = df[
