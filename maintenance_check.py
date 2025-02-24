@@ -42,7 +42,7 @@ def check_maintenance(equipment_name, company_name, requested_date):
     ]
 
     if equipment_data.empty:
-        return {"status": "error", "message": f"No maintenance record found for '{equipment_name}' under '{company_name}'."}
+        return {"status": "error", "message": f"(❌ No maintenance record found for '{equipment_name}' under '{company_name}'.)"}
 
     # Extract scheduled inspection months from Q1-Q4
     scheduled_months = []
@@ -55,11 +55,11 @@ def check_maintenance(equipment_name, company_name, requested_date):
 
     # Check if requested month exists in scheduled months
     if requested_month in scheduled_months:
-        return {"status": "Yes", "message": f"✅ The requested date {requested_date.date()} is within the maintenance window."}
+        return {"status": "Yes", "message": f"(✅ The requested date {requested_date.date()} is within the maintenance window.)"}
     else:
         # Get the first scheduled month for that equipment
         next_due_month = scheduled_month_names[0] if scheduled_month_names else "Unknown"
-        return {"status": f"No - Due in {next_due_month}", "message": f"❌ The requested date {requested_date.date()} is NOT within the maintenance window. Next due: {next_due_month}."}
+        return {"status": f"No - Due in {next_due_month}", "message": f"(❌ The requested date {requested_date.date()} is NOT within the maintenance window. Next due: {next_due_month}.)"}
 
 @app.route('/check_maintenance', methods=['POST'])
 def check_maintenance_api():
