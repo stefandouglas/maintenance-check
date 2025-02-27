@@ -35,7 +35,7 @@ if not creds or not creds.valid:
             'credentials.json', SCOPES)
         
         # Ensure the redirect URI matches what you've set in Google Cloud Console
-        flow.redirect_uri = 'http://localhost:5000/oauth2callback'
+        flow.redirect_uri = 'http://localhost:10000/oauth2callback'
         
         # Start the local server to handle the authentication
         creds = flow.run_local_server(port=5000)
