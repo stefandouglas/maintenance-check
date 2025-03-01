@@ -88,6 +88,7 @@ def check_induction_status(company_name, engineer_name):
         (df["engineer name"].str.lower() == engineer_name)
     ]
 
+    # Check if any row matches
     if engineer_data.empty:
         return {"status": "error", "message": f"Engineer '{engineer_name}' from '{company_name}' not found in induction records."}
 
