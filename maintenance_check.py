@@ -160,7 +160,7 @@ def check_maintenance_route():
         # Check maintenance schedule
         maintenance_check_result = check_maintenance(equipment_name, company_name, requested_date)
 
-        # Only check induction status if induction names are provided
+        # Always check induction status (whether induction names are provided or not)
         induction_status = {"status": "skipped", "message": "Induction names not provided."}
         if induction_names is not None:  # Only check if induction names are provided
             induction_status = check_induction_status(company_name, engineer_name)
