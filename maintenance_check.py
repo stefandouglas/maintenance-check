@@ -65,7 +65,10 @@ def check_maintenance(equipment_name, company_name, requested_date):
 
 # Function to load induction records from the "induction_records.xlsx" spreadsheet
 def load_induction_data(file_path="induction_records.xlsx"):
-    return pd.read_excel(file_path)
+    df = pd.read_excel(file_path)
+    # Debugging line to print actual column names to check for inconsistencies
+    print("Induction Records Columns:", df.columns)  # Print column names
+    return df
 
 # Function to check if the engineer is inducted
 def check_induction_status(company_name, engineer_name):
@@ -78,7 +81,7 @@ def check_induction_status(company_name, engineer_name):
     # Debugging: print out the first few rows to check the data
     print("Induction Records Sample:", df.head())
 
-    # Normalize inputs
+    # Normalize inputs for company_name and engineer_name
     company_name = company_name.strip().lower()
     engineer_name = engineer_name.strip().lower()
 
