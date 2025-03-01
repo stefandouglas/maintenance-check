@@ -13,7 +13,7 @@ month_mapping = {
     "September": 9, "October": 10, "November": 11, "December": 12
 }
 
-# Function to check the maintenance schedule in the planner
+# Function to check the maintenance schedule in the planner (Excel)
 def check_maintenance(equipment_name, company_name, requested_date):
     """Check if the requested maintenance date matches the correct quarter in the schedule."""
     try:
@@ -63,9 +63,8 @@ def check_maintenance(equipment_name, company_name, requested_date):
     except Exception as e:
         return {"status": "error", "message": f"(❌ An error occurred while checking the maintenance: {str(e)})"}
 
-# Function to find existing conversation in Excel
+# Function to find existing conversation in Excel (conversation_tracker.xlsx)
 def find_conversation(email, subject):
-    """Search for a conversation in the conversation tracker Excel file."""
     try:
         # Load the conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
@@ -80,9 +79,8 @@ def find_conversation(email, subject):
     except Exception as e:
         return None  # If error occurs, return None
 
-# Function to create a new conversation in Excel
+# Function to create a new conversation in Excel (conversation_tracker.xlsx)
 def create_new_conversation(email, subject, status):
-    """Add a new conversation to the conversation tracker Excel file."""
     try:
         # Load the existing conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
@@ -105,24 +103,27 @@ def create_new_conversation(email, subject, status):
     except Exception as e:
         return {"status": "error", "message": f"(❌ Error creating new conversation: {str(e)})"}
 
-# Flask route to check for conversation and schedule maintenance
-@app.route('/check_conversation', methods=['POST'])
-def check_conversation():
+# Flask route to check for maintenance and manage conversations
+@app.route('/check_maintenance', methods=['POST'])
+def check_maintenance_route():
     try:
-        # Get data from the request
+        # Get data from the request (Data from webhook)
         data = request.get_json()
-        email = data.get('email')
-        subject = data.get('subject')
         equipment_name = data.get('equipment_name')
         requested_date = data.get('requested_date')
+        company_name = data.get('company_name')
 
         # Check maintenance schedule
-        maintenance_check_result = check_maintenance(equipment_name, email.split('@')[1], requested_date)
+        maintenance_check_result = check_maintenance(equipment_name, company_name, requested_date)
+
+        # Simulating email and subject for this test (you can replace these)
+        email = "test@example.com"  # Add email from your system
+        subject = f"{equipment_name} request"
 
         # Check if conversation exists in Excel
         existing_conversation = find_conversation(email, subject)
-        
-        if existing_conversation is not None and not existing_conversation.empty:
+
+        if existing_conversation:
             # If found, continue with the existing conversation
             status = existing_conversation['Status']
             return jsonify({
