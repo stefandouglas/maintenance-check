@@ -72,22 +72,21 @@ def check_induction_status(company_name, engineer_name):
     # Load the induction data from the spreadsheet
     df = load_induction_data()
 
+    # Normalize column names for consistency (remove spaces and convert to lowercase)
+    df.columns = df.columns.str.strip().str.lower()
+
     # Normalize inputs
     company_name = company_name.strip().lower()
     engineer_name = engineer_name.strip().lower()
 
-    # Normalize data for comparison
-    df["Normalized Company"] = df["Company Name"].astype(str).str.strip().str.lower()
-    df["Normalized Engineer"] = df["Engineer Name"].astype(str).str.strip().str.lower()
-
-    # Find the corresponding row in the induction records
-    engineer_data = df[(df["Normalized Company"] == company_name) & (df["Normalized Engineer"] == engineer_name)]
+    # Find the corresponding row in the induction records using lowercase column names
+    engineer_data = df[(df["company name"] == company_name) & (df["engineer name"] == engineer_name)]
 
     if engineer_data.empty:
         return {"status": "error", "message": f"Engineer '{engineer_name}' from '{company_name}' not found in induction records."}
 
     # Get the induction expiry date
-    expiry_date = pd.to_datetime(engineer_data["Induction Expiry Date"].values[0])
+    expiry_date = pd.to_datetime(engineer_data["induction expiry date"].values[0])
     today = datetime.today()
 
     if expiry_date >= today:
@@ -153,7 +152,7 @@ def check_maintenance_route():
 
         # Only check induction status if induction names are provided
         induction_status = {"status": "skipped", "message": "Induction names not provided."}
-        if induction_names is not None:
+        if induction_names is not None:  # Only check if induction names are provided
             induction_status = check_induction_status(company_name, engineer_name)
 
         # Simulating email and subject for this test (you can replace these)
