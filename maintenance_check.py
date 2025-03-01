@@ -6,66 +6,11 @@ from datetime import datetime
 # Initialize Flask app
 app = Flask(__name__)
 
-# Define the month mapping for easier comparison
-month_mapping = {
-    "January": 1, "February": 2, "March": 3, "April": 4,
-    "May": 5, "June": 6, "July": 7, "August": 8,
-    "September": 9, "October": 10, "November": 11, "December": 12
-}
-
-# Function to check the maintenance schedule in the planner (Excel)
-def check_maintenance(equipment_name, company_name, requested_date):
-    """Check if the requested maintenance date matches the correct quarter in the schedule."""
-    try:
-        # Convert requested date to a datetime object
-        requested_date = pd.to_datetime(requested_date, dayfirst=True)
-        requested_month = requested_date.month
-        requested_year = requested_date.year
-
-        # Normalize input values for comparison (lowercase + strip spaces)
-        equipment_name = equipment_name.strip().lower()
-        company_name = company_name.strip().lower()
-
-        # Load the maintenance planner (Excel file)
-        EXCEL_FILE = "maintenance_schedule.xlsx"  # Ensure this file is in the correct directory
-        df = pd.read_excel(EXCEL_FILE)
-
-        # Normalize Excel data for comparison
-        df["Normalized Equipment"] = df["Maintenance subject"].astype(str).str.strip().str.lower()
-        df["Normalized Company"] = df["Company"].astype(str).str.strip().str.lower()
-
-        # Find the corresponding row in the maintenance planner
-        equipment_data = df[
-            (df["Normalized Equipment"] == equipment_name) & 
-            (df["Normalized Company"] == company_name)
-        ]
-
-        if equipment_data.empty:
-            return {"status": "error", "message": f"(❌ No maintenance record found for '{equipment_name}' under '{company_name}'.)"}
-
-        # Extract scheduled inspection months from Q1-Q4
-        scheduled_months = []
-        scheduled_month_names = []
-        for quarter in ["Inspection date Q1", "Inspection date Q2", "Inspection date Q3", "Inspection date Q4"]:
-            if pd.notna(equipment_data[quarter].values[0]):  # Check if there is a scheduled month
-                month_name = str(equipment_data[quarter].values[0]).strip()
-                scheduled_month_names.append(month_name)
-                scheduled_months.append(month_mapping.get(month_name, None))
-
-        # Check if requested month exists in scheduled months
-        if requested_month in scheduled_months:
-            return {"status": "Yes", "message": f"(✅ The requested date {requested_date.date()} is within the maintenance window.)"}
-        else:
-            # Get the first scheduled month for that equipment
-            next_due_month = scheduled_month_names[0] if scheduled_month_names else "Unknown"
-            return {"status": f"No - Due in {next_due_month}", "message": f"(❌ The requested date {requested_date.date()} is NOT within the maintenance window. Next due: {next_due_month}.)"}
-    
-    except Exception as e:
-        return {"status": "error", "message": f"(❌ An error occurred while checking the maintenance: {str(e)})"}
-
 # Function to load induction records from the "induction_records.xlsx" spreadsheet
 def load_induction_data(file_path="induction_records.xlsx"):
-    return pd.read_excel(file_path)
+    df = pd.read_excel(file_path)
+    print("Induction Records Columns:", df.columns)  # Debugging line to print column names
+    return df
 
 # Function to check if the engineer is inducted
 def check_induction_status(company_name, engineer_name):
@@ -75,12 +20,18 @@ def check_induction_status(company_name, engineer_name):
     # Normalize column names for consistency (remove spaces and convert to lowercase)
     df.columns = df.columns.str.strip().str.lower()
 
+    # Debugging: print out the first few rows to check the data
+    print("Induction Records Sample:", df.head())
+
     # Normalize inputs
     company_name = company_name.strip().lower()
     engineer_name = engineer_name.strip().lower()
 
-    # Find the corresponding row in the induction records using lowercase column names
-    engineer_data = df[(df["company name"] == company_name) & (df["engineer name"] == engineer_name)]
+    # Perform case-insensitive string comparison using .str accessor to avoid ambiguity in Series comparison
+    engineer_data = df[
+        (df["company name"].str.lower() == company_name) & 
+        (df["engineer name"].str.lower() == engineer_name)
+    ]
 
     if engineer_data.empty:
         return {"status": "error", "message": f"Engineer '{engineer_name}' from '{company_name}' not found in induction records."}
