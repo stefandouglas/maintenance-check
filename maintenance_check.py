@@ -125,8 +125,6 @@ def check_maintenance_route():
         equipment_name = data.get('equipment_name')
         requested_date = data.get('requested_date')
         company_name = data.get('company_name')
-        engineer_name = data.get('engineer_name')  # Add engineer name to check induction (though skipped for now)
-        induction_names = data.get('induction_names')  # Check if induction names are provided (though skipped for now)
 
         # Check maintenance schedule
         maintenance_check_result = check_maintenance(equipment_name, company_name, requested_date)
