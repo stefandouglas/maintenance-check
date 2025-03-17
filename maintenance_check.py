@@ -94,6 +94,9 @@ def find_conversation(email, subject):
 # Function to create a new conversation in Excel (conversation_tracker.xlsx)
 def create_new_conversation(email, subject, status):
     try:
+        # Debugging: Print the email and subject to confirm they are correct
+        print(f"Creating new conversation with Email: {email}, Subject: {subject}")
+
         # Load the existing conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
 
@@ -107,6 +110,10 @@ def create_new_conversation(email, subject, status):
             'Last Updated': datetime.now().strftime('%Y-%m-%d'),
             'Sender Domain + Subject': f"{email.split('@')[1]} {subject}"
         }
+
+        # Print the new data to verify
+        print("New conversation data to be added:", new_data)
+
         df = df.append(new_data, ignore_index=True)
 
         # Save the updated DataFrame back to the Excel file
@@ -114,7 +121,6 @@ def create_new_conversation(email, subject, status):
     
     except Exception as e:
         return {"status": "error", "message": f"(❌ Error creating new conversation: {str(e)})"}
-
 
 # Flask route to check for maintenance and manage conversations
 @app.route('/check_maintenance', methods=['POST'])
