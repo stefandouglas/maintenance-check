@@ -129,6 +129,8 @@ def create_new_conversation(email, subject, status):
 
         # Save the updated DataFrame back to the Excel file
         df.to_excel('conversation_tracker.xlsx', index=False)
+
+        return {"status": "success", "message": "New conversation added successfully!"}
     
     except Exception as e:
         return {"status": "error", "message": f"(❌ Error creating new conversation: {str(e)})"}
