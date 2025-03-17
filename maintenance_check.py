@@ -69,9 +69,6 @@ def find_conversation(email, subject):
         # Load the conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
 
-        # Debugging: Print the data in the conversation tracker to verify the structure
-        print("Conversation Tracker Data:\n", df.head())  # Show first few rows to check
-
         # Normalize Email and Subject for case-insensitive and stripped comparison
         email = email.strip().lower()
         subject = subject.strip().lower()
@@ -80,9 +77,6 @@ def find_conversation(email, subject):
         existing_conversation = df[
             (df['Email ID'].str.lower() == email) & (df['Subject'].str.lower() == subject)
         ]
-
-        # Debugging: Check the filtered results
-        print("Existing Conversation Found: \n", existing_conversation)
 
         if not existing_conversation.empty:
             return existing_conversation.iloc[0]  # Return the first matched row
@@ -94,9 +88,6 @@ def find_conversation(email, subject):
 # Function to create a new conversation in Excel (conversation_tracker.xlsx)
 def create_new_conversation(email, subject, status):
     try:
-        # Debugging: Print the email and subject to confirm they are correct
-        print(f"Creating new conversation with Email: {email}, Subject: {subject}")
-
         # Load the existing conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
 
@@ -115,17 +106,11 @@ def create_new_conversation(email, subject, status):
             'Sender Domain + Subject': f"{email.split('@')[1]} {subject}"
         }
 
-        # Print the new data to verify
-        print("New conversation data to be added:", new_data)
-
         # Remove any rows with NaN or empty values in essential columns (Email ID, Subject)
         df.dropna(subset=['Email ID', 'Subject'], inplace=True)
 
         # Append the new conversation to the DataFrame
         df = df.append(new_data, ignore_index=True)
-
-        # Debugging: Print the DataFrame after appending
-        print("Updated DataFrame after appending new data:\n", df)
 
         # Save the updated DataFrame back to the Excel file
         df.to_excel('conversation_tracker.xlsx', index=False)
@@ -142,18 +127,11 @@ def check_maintenance_route():
         # Get data from the request (Data from webhook)
         data = request.get_json()
 
-        # Debugging: Print the received data
-        print("Received data:", data)
-
         equipment_name = data.get('equipment_name')
         requested_date = data.get('requested_date')
         company_name = data.get('company_name')
         email = data.get('email')  # Make sure email is passed in the request
         subject = f"{equipment_name} request"
-
-        # Debugging: Print email and subject to confirm they are correct
-        print(f"Email Received: {email}")
-        print(f"Subject: {subject}")
 
         # Check maintenance schedule
         maintenance_check_result = check_maintenance(equipment_name, company_name, requested_date)
