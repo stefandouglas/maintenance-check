@@ -120,6 +120,9 @@ def create_new_conversation(email, subject, status):
 
         df = df.append(new_data, ignore_index=True)
 
+        # Debugging: Print the DataFrame after appending
+        print("Updated DataFrame after appending new data:\n", df)
+
         # Save the updated DataFrame back to the Excel file
         df.to_excel('conversation_tracker.xlsx', index=False)
     
