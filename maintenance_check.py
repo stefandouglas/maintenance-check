@@ -1,15 +1,9 @@
 import pandas as pd
 from datetime import datetime
+from flask import Flask, request, jsonify
 
-# Sample input data (received from OpenAI Assistant)
-input_data = {
-    "Schedule Date": "05/03/25",
-    "Equipment/Part": "Fire alarm",
-    "Company": "Fire Alarms South West",
-    "Email Subject": "Fire alarm maintenance reschedule",
-    "Status": "First schedule request",
-    "Attachment": "No"
-}
+# Initialize Flask app
+app = Flask(__name__)
 
 # Function to check if the maintenance date is within the maintenance window
 def check_maintenance_window(requested_date, equipment_name, company_name):
@@ -75,6 +69,39 @@ def process_maintenance_request(input_data):
         "Status": maintenance_check_result["status"]
     }
 
-# Call the function with input data
-output = process_maintenance_request(input_data)
-print(output)
+# Flask route to check for maintenance and process conversation tracking
+@app.route('/check_maintenance', methods=['POST'])
+def check_maintenance_route():
+    try:
+        # Get data from the request (Data from webhook)
+        data = request.get_json()
+        equipment_name = data.get('equipment_name')
+        requested_date = data.get('requested_date')
+        company_name = data.get('company_name')
+
+        # Process maintenance request
+        maintenance_check_result = process_maintenance_request({
+            "Schedule Date": requested_date,
+            "Equipment/Part": equipment_name,
+            "Company": company_name,
+            "Email Subject": f"{equipment_name} request",
+            "Status": "First schedule request",
+            "Attachment": "No"
+        })
+
+        # Return maintenance check result
+        return jsonify({
+            "status": "Success",
+            "message": "Maintenance check completed successfully.",
+            "maintenance_check_result": maintenance_check_result
+        })
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"An error occurred: {str(e)}"
+        })
+
+# Only run app in development mode, but in production (Render), Gunicorn will handle it
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=10000)  # Running Flask app locally for testing
