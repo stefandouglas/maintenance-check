@@ -110,8 +110,20 @@ def find_conversation(email, subject):
         # Load the conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
 
+        # Debugging: Print the data in the conversation tracker to verify the structure
+        print("Conversation Tracker Data:\n", df.head())  # Show first few rows to check
+
+        # Normalize Email and Subject for case-insensitive and stripped comparison
+        email = email.strip().lower()
+        subject = subject.strip().lower()
+
         # Check for existing conversation (email and subject match)
-        existing_conversation = df[(df['Email ID'] == email) & (df['Subject'] == subject)]
+        existing_conversation = df[
+            (df['Email ID'].str.lower() == email) & (df['Subject'].str.lower() == subject)
+        ]
+
+        # Debugging: Check the filtered results
+        print("Existing Conversation Found: \n", existing_conversation)
 
         if not existing_conversation.empty:
             return existing_conversation.iloc[0]  # Return the first matched row
