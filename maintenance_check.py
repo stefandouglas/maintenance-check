@@ -118,6 +118,10 @@ def create_new_conversation(email, subject, status):
         # Print the new data to verify
         print("New conversation data to be added:", new_data)
 
+        # Remove any rows with NaN or empty values in essential columns (Email ID, Subject)
+        df.dropna(subset=['Email ID', 'Subject'], inplace=True)
+
+        # Append the new conversation to the DataFrame
         df = df.append(new_data, ignore_index=True)
 
         # Debugging: Print the DataFrame after appending
