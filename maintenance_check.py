@@ -63,47 +63,6 @@ def check_maintenance(equipment_name, company_name, requested_date):
     except Exception as e:
         return {"status": "error", "message": f"(❌ An error occurred while checking the maintenance: {str(e)})"}
 
-# Function to load induction records from the "induction_records.xlsx" spreadsheet
-def load_induction_data(file_path="induction_records.xlsx"):
-    df = pd.read_excel(file_path)
-    # Debugging line to print actual column names to check for inconsistencies
-    print("Induction Records Columns:", df.columns)  # Print column names
-    return df
-
-# Function to check if the engineer is inducted
-def check_induction_status(company_name, engineer_name):
-    # Load the induction data from the spreadsheet
-    df = load_induction_data()
-
-    # Normalize column names for consistency (remove spaces and convert to lowercase)
-    df.columns = df.columns.str.strip().str.lower()
-
-    # Debugging: print out the first few rows to check the data
-    print("Induction Records Sample:", df.head())
-
-    # Normalize inputs for company_name and engineer_name
-    company_name = company_name.strip().lower()
-    engineer_name = engineer_name.strip().lower()
-
-    # Perform case-insensitive string comparison using .str accessor to avoid ambiguity in Series comparison
-    engineer_data = df[
-        (df["company name"].str.lower() == company_name) & 
-        (df["engineer name"].str.lower() == engineer_name)
-    ]
-
-    # Check if any row matches
-    if engineer_data.empty:
-        return {"status": "error", "message": f"Engineer '{engineer_name}' from '{company_name}' not found in induction records."}
-
-    # Get the induction expiry date
-    expiry_date = pd.to_datetime(engineer_data["induction expiry date"].values[0])
-    today = datetime.today()
-
-    if expiry_date >= today:
-        return {"status": "inducted", "message": f"Engineer {engineer_name} is inducted. Induction valid until {expiry_date.date()}."}
-    else:
-        return {"status": "not inducted", "message": f"Engineer {engineer_name} is not inducted. Induction expired on {expiry_date.date()}."}
-
 # Function to find existing conversation in Excel (conversation_tracker.xlsx)
 def find_conversation(email, subject):
     try:
@@ -166,16 +125,11 @@ def check_maintenance_route():
         equipment_name = data.get('equipment_name')
         requested_date = data.get('requested_date')
         company_name = data.get('company_name')
-        engineer_name = data.get('engineer_name')  # Add engineer name to check induction
-        induction_names = data.get('induction_names')  # Check if induction names are provided
+        engineer_name = data.get('engineer_name')  # Add engineer name to check induction (though skipped for now)
+        induction_names = data.get('induction_names')  # Check if induction names are provided (though skipped for now)
 
         # Check maintenance schedule
         maintenance_check_result = check_maintenance(equipment_name, company_name, requested_date)
-
-        # Always check induction status (whether induction names are provided or not)
-        induction_status = {"status": "skipped", "message": "Induction names not provided."}
-        if induction_names is not None:  # Only check if induction names are provided
-            induction_status = check_induction_status(company_name, engineer_name)
 
         # Simulating email and subject for this test (you can replace these)
         email = "test@example.com"  # Add email from your system
@@ -190,8 +144,7 @@ def check_maintenance_route():
             return jsonify({
                 "status": "Conversation found",
                 "message": f"Carry on from previous conversation. Current status: {status}",
-                "maintenance_check_result": maintenance_check_result,
-                "induction_status": induction_status
+                "maintenance_check_result": maintenance_check_result
             })
         else:
             # If no conversation is found, create a new entry in Excel
@@ -199,8 +152,7 @@ def check_maintenance_route():
             return jsonify({
                 "status": "New conversation",
                 "message": "Created new conversation in Excel",
-                "maintenance_check_result": maintenance_check_result,
-                "induction_status": induction_status
+                "maintenance_check_result": maintenance_check_result
             })
     
     except Exception as e:
