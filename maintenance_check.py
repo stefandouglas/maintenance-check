@@ -100,6 +100,10 @@ def create_new_conversation(email, subject, status):
         # Load the existing conversation tracker Excel file
         df = pd.read_excel('conversation_tracker.xlsx')
 
+        # Ensure the email is not None or empty
+        if not email or pd.isna(email):
+            return {"status": "error", "message": "Email address is missing or invalid."}
+
         # Add a new row with the provided data
         new_data = {
             'Email ID': email,
