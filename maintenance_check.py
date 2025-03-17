@@ -128,16 +128,22 @@ def check_maintenance_route():
     try:
         # Get data from the request (Data from webhook)
         data = request.get_json()
+
+        # Debugging: Print the received data
+        print("Received data:", data)
+
         equipment_name = data.get('equipment_name')
         requested_date = data.get('requested_date')
         company_name = data.get('company_name')
+        email = data.get('email')  # Make sure email is passed in the request
+        subject = f"{equipment_name} request"
+
+        # Debugging: Print email and subject to confirm they are correct
+        print(f"Email Received: {email}")
+        print(f"Subject: {subject}")
 
         # Check maintenance schedule
         maintenance_check_result = check_maintenance(equipment_name, company_name, requested_date)
-
-        # Simulating email and subject for this test (you can replace these)
-        email = "test@example.com"  # Add email from your system
-        subject = f"{equipment_name} request"
 
         # Check if conversation exists in Excel
         existing_conversation = find_conversation(email, subject)
