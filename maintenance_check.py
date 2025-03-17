@@ -89,7 +89,7 @@ def find_conversation(email, subject):
 def create_new_conversation(email, subject, status):
     try:
         # Load the existing conversation tracker Excel file
-        df = pd.read_excel('conversation_tracker.xlsx')
+        df = pd.read_excel(r'C:\Users\stefa\Desktop\AI\maintenance-check\conversation_tracker.xlsx')
 
         # Ensure the email is not None or empty
         if not email or pd.isna(email):
@@ -113,7 +113,7 @@ def create_new_conversation(email, subject, status):
         df = df.append(new_data, ignore_index=True)
 
         # Save the updated DataFrame back to the Excel file
-        df.to_excel('conversation_tracker.xlsx', index=False)
+        df.to_excel(r'C:\Users\stefa\Desktop\AI\maintenance-check\conversation_tracker.xlsx', index=False)
 
         return {"status": "success", "message": "New conversation added successfully!"}
     
