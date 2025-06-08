@@ -3,17 +3,8 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 
 CONVERSATION_FILE = r"C:\Users\stefa\Desktop\AI\maintenance-check\conversation_tracker.xlsx"
-LOG_FILE = r"C:\Users\stefa\Desktop\AI\maintenance-check\conversation_log.txt"
 
 app = Flask(__name__)
-
-def log_request(data):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"\n--- {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ---\n")
-            f.write(f"{data}\n")
-    except Exception as e:
-        print(f"⚠️ Logging failed: {e}")
 
 def find_conversation(email, subject):
     try:
@@ -80,13 +71,15 @@ def create_new_conversation(email, subject, initial_status):
 def check_conversation():
     try:
         data = request.get_json()
-        log_request(data)
+        email = data.get('email')
+        subject = data.get('email_subject')
 
-        email = data['email']
-        subject = data['email_subject']
         attachment = data.get('attachment', 'No').strip().lower() == 'yes'
+
+        # Handle optional engineer names
         engineers_raw = data.get('engineer_names', '')
-        engineer_names_present = bool(engineers_raw.strip())
+        engineers = [e.strip() for e in engineers_raw.split(',')] if engineers_raw else []
+        engineer_names_present = bool(engineers)
 
         df, index = find_conversation(email, subject)
 
@@ -98,11 +91,8 @@ def check_conversation():
             return jsonify(create_new_conversation(email, subject, 'Scheduling Request'))
         else:
             return jsonify({"status": "error", "message": "Failed to read conversation tracker."})
-
     except Exception as e:
-        error_message = f"❌ Error in check_conversation route: {str(e)}"
-        print(error_message)
-        log_request({"error": error_message})
+        print(f"Error in check_conversation route: {str(e)}")
         return jsonify({"status": "error", "message": f"Error: {str(e)}"})
 
 if __name__ == '__main__':
