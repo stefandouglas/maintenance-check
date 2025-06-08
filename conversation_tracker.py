@@ -1,96 +1,95 @@
 import pandas as pd
 from datetime import datetime
+from flask import Flask, request, jsonify
 
-# Define the conversation tracker file path
 CONVERSATION_FILE = r"C:\Users\stefa\Desktop\AI\maintenance-check\conversation_tracker.xlsx"
 
-# Function to check for an existing conversation based on email and subject
+app = Flask(__name__)
+
 def find_conversation(email, subject):
     try:
-        # Load the conversation tracker Excel file
         df = pd.read_excel(CONVERSATION_FILE)
-
-        # Normalize email and subject for comparison
         email = email.strip().lower()
         subject = subject.strip().lower()
-
-        # Check for existing conversation (email and subject match)
-        existing_conversation = df[(df['Email ID'].str.strip().str.lower() == email) & 
-                                   (df['Subject'].str.strip().str.lower() == subject)]
-
+        existing_conversation = df[
+            (df['Email ID'].str.strip().str.lower() == email) &
+            (df['Subject'].str.strip().str.lower() == subject)
+        ]
         if not existing_conversation.empty:
-            return existing_conversation.iloc[0]  # Return the first matched row
-        return None  # No conversation found
-    
+            return df, existing_conversation.index[0]
+        return df, None
     except Exception as e:
-        return None  # If error occurs, return None
+        print(f"Error in find_conversation: {str(e)}")
+        return None, None
 
-# Function to create a new conversation in the tracker
-def create_new_conversation(email, subject, status):
+def determine_next_status(current_status, attachment_present, engineer_names_present):
+    if current_status.lower() == 'scheduling request':
+        return 'Awaiting RAMS and Engineer Names'
+    elif current_status.lower() == 'awaiting rams and engineer names':
+        if attachment_present and engineer_names_present:
+            return 'Conversation Complete'
+        elif attachment_present:
+            return 'Awaiting Engineer Names'
+        elif engineer_names_present:
+            return 'Awaiting RAMS'
+    elif current_status.lower() == 'awaiting rams' and attachment_present:
+        return 'Conversation Complete'
+    elif current_status.lower() == 'awaiting engineer names' and engineer_names_present:
+        return 'Conversation Complete'
+    return current_status
+
+def update_conversation_status(df, index, new_status):
     try:
-        # Load the existing conversation tracker Excel file
-        df = pd.read_excel(CONVERSATION_FILE)
+        df.at[index, 'Status'] = new_status
+        df.at[index, 'Last Updated'] = datetime.now().strftime('%Y-%m-%d')
+        df.to_excel(CONVERSATION_FILE, index=False)
+        return {"status": "success", "message": f"Conversation updated to {new_status}.", "new_status": new_status}
+    except Exception as e:
+        print(f"Error in update_conversation_status: {str(e)}")
+        return {"status": "error", "message": f"Error updating conversation: {str(e)}"}
 
-        # Add a new row with the provided data
+def create_new_conversation(email, subject, initial_status):
+    try:
+        df = pd.read_excel(CONVERSATION_FILE)
         new_data = {
             'Email ID': email,
-            'Sender Domain': email.split('@')[1],  # Extract domain from the email
-            'Company Name': email.split('@')[1].split('.')[0],  # Basic way to get the company name
+            'Sender Domain': email.split('@')[1],
+            'Company Name': email.split('@')[1].split('.')[0],
             'Subject': subject,
-            'Status': status,
+            'Status': initial_status,
             'Last Updated': datetime.now().strftime('%Y-%m-%d'),
             'Sender Domain + Subject': f"{email.split('@')[1]} {subject}"
         }
-        df = df.append(new_data, ignore_index=True)
-
-        # Save the updated DataFrame back to the Excel file
+        df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
         df.to_excel(CONVERSATION_FILE, index=False)
-        return {"status": "success", "message": "New conversation created."}
-    
+        return {"status": "success", "message": "New conversation created.", "new_status": initial_status}
     except Exception as e:
+        print(f"Error in create_new_conversation: {str(e)}")
         return {"status": "error", "message": f"Error creating new conversation: {str(e)}"}
 
-# Function to update an existing conversation's status
-def update_conversation_status(email, subject, new_status):
+@app.route('/check_conversation', methods=['POST'])
+def check_conversation():
     try:
-        # Load the existing conversation tracker Excel file
-        df = pd.read_excel(CONVERSATION_FILE)
+        data = request.get_json()
+        email = data['email']
+        subject = data['email_subject']
+        attachment = data.get('attachment', 'No').strip().lower() == 'yes'
+        engineers_raw = data.get('engineer_names', '')
+        engineer_names_present = bool(engineers_raw.strip())
 
-        # Find the row for the existing conversation
-        existing_conversation = df[(df['Email ID'].str.strip().str.lower() == email) & 
-                                   (df['Subject'].str.strip().str.lower() == subject)]
+        df, index = find_conversation(email, subject)
 
-        if not existing_conversation.empty:
-            # Update the status
-            df.loc[existing_conversation.index, 'Status'] = new_status
-            df.loc[existing_conversation.index, 'Last Updated'] = datetime.now().strftime('%Y-%m-%d')
-
-            # Save the updated DataFrame back to the Excel file
-            df.to_excel(CONVERSATION_FILE, index=False)
-            return {"status": "success", "message": f"Conversation updated to {new_status}."}
+        if df is not None and index is not None:
+            current_status = df.at[index, 'Status']
+            new_status = determine_next_status(current_status, attachment, engineer_names_present)
+            return jsonify(update_conversation_status(df, index, new_status))
+        elif df is not None:
+            return jsonify(create_new_conversation(email, subject, 'Scheduling Request'))
         else:
-            return {"status": "error", "message": "Conversation not found."}
-    
+            return jsonify({"status": "error", "message": "Failed to read conversation tracker."})
     except Exception as e:
-        return {"status": "error", "message": f"Error updating conversation: {str(e)}"}
+        print(f"Error in check_conversation route: {str(e)}")
+        return jsonify({"status": "error", "message": f"Error: {str(e)}"})
 
-# Function to check and update conversations (process incoming data)
-def process_conversation_data(email, subject, status):
-    existing_conversation = find_conversation(email, subject)
-
-    if existing_conversation is not None:
-        # If conversation exists, update the status
-        return update_conversation_status(email, subject, status)
-    else:
-        # If no conversation found, create a new conversation
-        return create_new_conversation(email, subject, status)
-
-# Test the system by passing data
-input_data = {
-    "email": "test@example.com",
-    "subject": "Fire alarm maintenance reschedule",
-    "status": "Waiting on RAMS"  # Example status to test
-}
-
-result = process_conversation_data(input_data["email"], input_data["subject"], input_data["status"])
-print(result)
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=10000)
