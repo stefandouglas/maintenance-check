@@ -2,7 +2,7 @@ import pandas as pd
 from datetime import datetime
 
 # Define the conversation tracker file path
-CONVERSATION_FILE = "conversation_tracker.xlsx"
+CONVERSATION_FILE = r"C:\Users\stefa\Desktop\AI\maintenance-check\conversation_tracker.xlsx"
 
 # Function to check for an existing conversation based on email and subject
 def find_conversation(email, subject):
