@@ -38,6 +38,21 @@ def determine_next_status(current_status, attachment_present, engineer_names_pre
         return 'Conversation Complete'
     return current_status
 
+def get_next_step_instruction(status):
+    status = status.lower()
+    if status == "scheduling request":
+        return "Please ask the contractor to provide a proposed maintenance date."
+    elif status == "awaiting rams and engineer names":
+        return "Please ask the contractor to provide RAMS and the names of the attending engineers."
+    elif status == "awaiting engineer names":
+        return "Please ask for the names of the attending engineers."
+    elif status == "awaiting rams":
+        return "Please ask for RAMS."
+    elif status == "conversation complete":
+        return "All information has been received. Confirm attendance and say thank you."
+    else:
+        return "Continue monitoring this conversation."
+
 def update_conversation_status(df, index, new_status):
     try:
         df.at[index, 'Status'] = new_status
@@ -47,6 +62,16 @@ def update_conversation_status(df, index, new_status):
     except Exception as e:
         print(f"Error in update_conversation_status: {str(e)}")
         return {"status": "error", "message": f"Error updating conversation: {str(e)}"}
+
+def determine_initial_status(attachment_present, engineer_names_present):
+    if attachment_present and engineer_names_present:
+        return "Conversation Complete"
+    elif attachment_present:
+        return "Awaiting Engineer Names"
+    elif engineer_names_present:
+        return "Awaiting RAMS"
+    else:
+        return "Scheduling Request"
 
 def create_new_conversation(email, subject, initial_status):
     try:
@@ -73,12 +98,9 @@ def check_conversation():
         data = request.get_json()
         email = data.get('email')
         subject = data.get('email_subject')
-
         attachment = data.get('attachment', 'No').strip().lower() == 'yes'
-
-        # Handle optional engineer names
         engineers_raw = data.get('engineer_names', '')
-        engineers = [e.strip() for e in engineers_raw.split(',')] if engineers_raw else []
+        engineers = [e.strip() for e in engineers_raw.split(',')] if engineers_raw and engineers_raw.lower() != 'none' else []
         engineer_names_present = bool(engineers)
 
         df, index = find_conversation(email, subject)
@@ -86,9 +108,16 @@ def check_conversation():
         if df is not None and index is not None:
             current_status = df.at[index, 'Status']
             new_status = determine_next_status(current_status, attachment, engineer_names_present)
-            return jsonify(update_conversation_status(df, index, new_status))
+            instruction = get_next_step_instruction(new_status)
+            response_data = update_conversation_status(df, index, new_status)
+            response_data["next_step_instruction"] = instruction
+            return jsonify(response_data)
         elif df is not None:
-            return jsonify(create_new_conversation(email, subject, 'Scheduling Request'))
+            initial_status = determine_initial_status(attachment, engineer_names_present)
+            instruction = get_next_step_instruction(initial_status)
+            response_data = create_new_conversation(email, subject, initial_status)
+            response_data["next_step_instruction"] = instruction
+            return jsonify(response_data)
         else:
             return jsonify({"status": "error", "message": "Failed to read conversation tracker."})
     except Exception as e:
