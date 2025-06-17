@@ -19,7 +19,7 @@ def find_conversation(email, subject):
             return df, existing_conversation.index[0]
         return df, None
     except Exception as e:
-        print(f"Error in find_conversation: {str(e)}")
+        print(f"❌ Error in find_conversation: {str(e)}")
         return None, None
 
 def determine_next_status(current_status, attachment_present, engineer_names_present):
@@ -58,9 +58,13 @@ def update_conversation_status(df, index, new_status):
         df.at[index, 'Status'] = new_status
         df.at[index, 'Last Updated'] = datetime.now().strftime('%Y-%m-%d')
         df.to_excel(CONVERSATION_FILE, index=False)
-        return {"status": "success", "message": f"Conversation updated to {new_status}.", "new_status": new_status}
+        return {
+            "status": "success",
+            "message": f"Conversation updated to {new_status}.",
+            "new_status": new_status
+        }
     except Exception as e:
-        print(f"Error in update_conversation_status: {str(e)}")
+        print(f"❌ Error in update_conversation_status: {str(e)}")
         return {"status": "error", "message": f"Error updating conversation: {str(e)}"}
 
 def determine_initial_status(attachment_present, engineer_names_present):
@@ -89,22 +93,28 @@ def create_new_conversation(email, subject, initial_status):
         }
         df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
         df.to_excel(CONVERSATION_FILE, index=False)
-        return {"status": "success", "message": "New conversation created.", "new_status": initial_status}
+        return {
+            "status": "success",
+            "message": "New conversation created.",
+            "new_status": initial_status
+        }
     except Exception as e:
-        print(f"Error in create_new_conversation: {str(e)}")
+        print(f"❌ Error in create_new_conversation: {str(e)}")
         return {"status": "error", "message": f"Error creating new conversation: {str(e)}"}
 
 @app.route('/check_conversation', methods=['POST'])
 def check_conversation():
     try:
         data = request.get_json()
+        print("✅ Incoming data from Zapier:", data)
+
         email = str(data.get('email', '')).strip()
         subject = str(data.get('email_subject', '')).strip()
         attachment = str(data.get('attachment', 'No')).strip().lower() == 'yes'
         engineers_raw = str(data.get('engineer_names', '')).strip()
 
-        # Clean up 'None' from OpenAI
-        if engineers_raw.lower() in ['none', '']: engineers_raw = ''
+        if engineers_raw.lower() in ['none', '', 'null']:
+            engineers_raw = ''
 
         engineers = [e.strip() for e in engineers_raw.split(',')] if engineers_raw else []
         engineer_names_present = bool(engineers)
@@ -130,7 +140,7 @@ def check_conversation():
         else:
             return jsonify({"status": "error", "message": "Failed to read conversation tracker."})
     except Exception as e:
-        print(f"Error in check_conversation route: {str(e)}")
+        print(f"❌ Error in check_conversation route: {str(e)}")
         return jsonify({"status": "error", "message": f"Error: {str(e)}"})
 
 if __name__ == '__main__':
