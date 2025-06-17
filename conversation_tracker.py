@@ -9,8 +9,8 @@ app = Flask(__name__)
 def find_conversation(email, subject):
     try:
         df = pd.read_excel(CONVERSATION_FILE)
-        email = email.strip().lower()
-        subject = subject.strip().lower()
+        email = str(email).strip().lower()
+        subject = str(subject).strip().lower()
         existing_conversation = df[
             (df['Email ID'].str.strip().str.lower() == email) &
             (df['Subject'].str.strip().str.lower() == subject)
@@ -76,14 +76,16 @@ def determine_initial_status(attachment_present, engineer_names_present):
 def create_new_conversation(email, subject, initial_status):
     try:
         df = pd.read_excel(CONVERSATION_FILE)
+        domain = str(email.split('@')[1]) if '@' in email else "unknown"
+        company = domain.split('.')[0] if '.' in domain else domain
         new_data = {
             'Email ID': email,
-            'Sender Domain': email.split('@')[1],
-            'Company Name': email.split('@')[1].split('.')[0],
+            'Sender Domain': domain,
+            'Company Name': company,
             'Subject': subject,
             'Status': initial_status,
             'Last Updated': datetime.now().strftime('%Y-%m-%d'),
-            'Sender Domain + Subject': f"{email.split('@')[1]} {subject}"
+            'Sender Domain + Subject': f"{domain} {subject}"
         }
         df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
         df.to_excel(CONVERSATION_FILE, index=False)
@@ -96,12 +98,19 @@ def create_new_conversation(email, subject, initial_status):
 def check_conversation():
     try:
         data = request.get_json()
-        email = data.get('email')
-        subject = data.get('email_subject')
-        attachment = data.get('attachment', 'No').strip().lower() == 'yes'
-        engineers_raw = data.get('engineer_names', '')
-        engineers = [e.strip() for e in engineers_raw.split(',')] if engineers_raw and engineers_raw.lower() != 'none' else []
+        email = str(data.get('email', '')).strip()
+        subject = str(data.get('email_subject', '')).strip()
+        attachment = str(data.get('attachment', 'No')).strip().lower() == 'yes'
+        engineers_raw = str(data.get('engineer_names', '')).strip()
+
+        # Clean up 'None' from OpenAI
+        if engineers_raw.lower() in ['none', '']: engineers_raw = ''
+
+        engineers = [e.strip() for e in engineers_raw.split(',')] if engineers_raw else []
         engineer_names_present = bool(engineers)
+
+        if not email or not subject:
+            return jsonify({"status": "error", "message": "Missing required fields: email or subject."})
 
         df, index = find_conversation(email, subject)
 
